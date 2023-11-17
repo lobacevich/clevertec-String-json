@@ -10,7 +10,7 @@ import java.util.Map;
 public class Serialize {
 
     private static final List<String> DOUBLE_QUOTE = List.of("String", "LocalDateTime", "LocalDate",
-            "OffsetDatetime", "UUID");
+            "OffsetDateTime", "UUID");
     private static int counter = 0;
     private static final StringBuilder BUILDER = new StringBuilder();
 
@@ -62,9 +62,9 @@ public class Serialize {
         if (value == null) {
             BUILDER.append("null")
                     .append(",\n");
-        } else if (value.getClass().getSuperclass().getSimpleName().equals("Number") ||
-                value.getClass().getSimpleName().equals("Boolean") ||
-                value.getClass().getSimpleName().equals("Character") ||
+        } else if (value instanceof Number ||
+                value instanceof Boolean ||
+                value instanceof Character ||
                 value.getClass().isPrimitive()) {
             BUILDER.append(value)
                     .append(",\n");
@@ -78,7 +78,7 @@ public class Serialize {
     }
 
     private static void CollectionConverter(Object o) {
-        BUILDER.append(" [\n");
+        BUILDER.append("[\n");
         for (Object elem : (Collection<?>) o) {
             converter(elem);
             BUILDER.append(",");
