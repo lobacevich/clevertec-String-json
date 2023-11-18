@@ -8,6 +8,7 @@ import lombok.Data;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -20,12 +21,13 @@ public class ProductTestData {
         Product product4 = new Product(UUID.randomUUID(), "Coca", 5.39);
 
         Order order1 = new Order(UUID.randomUUID(), List.of(product1, product3, product4),
-                OffsetDateTime.now());
+                OffsetDateTime.parse("2023-11-18T12:33:30Z"));
         Order order2 = new Order(UUID.randomUUID(), List.of(product2, product1, product4),
-                OffsetDateTime.now());
+                OffsetDateTime.parse("2023-11-18T12:33:30Z"));
 
         Customer customer = new Customer(UUID.randomUUID(), "Alex", "Petrov",
-                LocalDate.of(1997, 05, 21), List.of(order1, order2));
+                LocalDate.of(1997, 05, 21),
+                Map.of(LocalDate.of(2003, 05, 19), List.of(order1, order2)));
         return customer;
     }
     public static String getJson() {

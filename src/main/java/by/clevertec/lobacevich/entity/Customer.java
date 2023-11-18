@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -17,5 +18,5 @@ public class Customer {
     private String firstName;
     private String lastName;
     private LocalDate dateBirth;
-    private List<Order> orders;
+    private Map<LocalDate, List<Order>> orders;
 }

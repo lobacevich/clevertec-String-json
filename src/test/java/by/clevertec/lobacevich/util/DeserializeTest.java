@@ -17,7 +17,6 @@ import static org.junit.jupiter.api.Assertions.*;
 class DeserializeTest {
 
     @Test
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSXXXXX")
     void toObject() {
         ObjectMapper mapper = new ObjectMapper();
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -30,8 +29,6 @@ class DeserializeTest {
             Customer actual = Deserialize.toObject(json, Customer.class);
 
             assertEquals(expected, actual);
-            System.out.println(expected);
-            System.out.println(actual);
         } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException |
                  ClassNotFoundException | JsonProcessingException e) {
             throw new SerializationException(e.getMessage());

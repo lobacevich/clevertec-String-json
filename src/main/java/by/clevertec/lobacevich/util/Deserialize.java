@@ -2,8 +2,11 @@ package by.clevertec.lobacevich.util;
 
 import by.clevertec.lobacevich.exception.SerializationException;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -91,8 +94,33 @@ public class Deserialize {
         return json;
     }
 
+    private static String mapIntoMap(String json, Map<String, String> objectMap, int start) {
+        int counter = 1;
+        int i = start + 1;
+        while (counter != 0) {
+            if (json.charAt(i) == '{') {
+                counter++;
+            }
+            if (json.charAt(i) == '}') {
+                counter--;
+            }
+            i++;
+        }
+        String key = json.substring(1, start - 2);
+        String value = json.substring(start, i);
+        objectMap.put(key, value);
+        json = json.substring(i);
+        if (json.length() > 0) {
+            json = json.substring(1);
+        }
+        return json;
+    }
+
     private static void fillFields(Map<String, String> objectMap, Object object) throws IllegalAccessException, ClassNotFoundException, InvocationTargetException, NoSuchMethodException, InstantiationException {
         Field[] fields = object.getClass().getDeclaredFields();
+        if (object.getClass().getSimpleName().equals("List")) {
+            return;
+        }
         for (Field field : fields) {
             field.setAccessible(true);
             fillField(objectMap, object, field);
@@ -102,11 +130,11 @@ public class Deserialize {
     private static void fillField(Map<String, String> objectMap, Object o, Field field) throws IllegalAccessException, ClassNotFoundException, InvocationTargetException, NoSuchMethodException, InstantiationException {
         String type = field.getType().getSimpleName();
         if (type.equals("List")) {
-            fillCollectionField(objectMap, o, field);
+            fillListField(objectMap, o, field);
             return;
         }
         if (type.equals("Map")) {
-            System.out.println("Map");
+            fillMapField(objectMap, o, field);
             return;
         }
         String value = objectMap.get(field.getName());
@@ -131,11 +159,23 @@ public class Deserialize {
         }
     }
 
-    private static void fillCollectionField(Map<String, String> objectMap, Object o, Field field) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    private static void fillListField(Map<String, String> objectMap, Object o, Field field) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        Class<?> clazz = getListGenericClass(o, field);
+        String value = objectMap.get(field.getName());
+        List list = new ArrayList();
+        field.set(o, list);
+        fillList(list, value, clazz);
+    }
+
+    private static Class<?> getListGenericClass(Object o, Field field) throws ClassNotFoundException {
         String genericType = field.getGenericType().getTypeName();
         String className = genericType.split("<")[1].replace(">", "");
         Class<?> clazz = Class.forName(className);
-        String value = objectMap.get(field.getName());
+        return clazz;
+    }
+
+
+    private static void fillList(List list, String value, Class<?> clazz) throws ClassNotFoundException, InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
         while (value.length() > 1) {
             int counter = 1;
             int i = 2;
@@ -151,20 +191,58 @@ public class Deserialize {
             String json = value.substring(1, i);
             value = value.substring(i, value.length());
             i = 1;
-            Object newObject = clazz.getDeclaredConstructor().newInstance();
-            fillObject(json, newObject);
-            if (field.get(o) == null) {
-                List list = new ArrayList();
-                field.set(o, list);
+                Object newObject = clazz.getDeclaredConstructor().newInstance();
+                fillObject(json, newObject);
                 list.add(newObject);
-            } else {
-                List list = (ArrayList) field.get(o);
-                list.add(newObject);
-            }
         }
     }
 
-    private static String mapIntoMap(String json, Map<String, String> objectMap, int start) {
-        return "";
+    private static void fillMapField(Map<String, String> objectMap, Object o, Field field) throws ClassNotFoundException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, InstantiationException {
+        ParameterizedType type = (ParameterizedType) field.getGenericType();
+        Type mapKeyType = type.getActualTypeArguments()[0];
+        Type mapValueType = type.getActualTypeArguments()[1];
+        String json = objectMap.get(field.getName());
+        int index = json.indexOf(':');
+        String keyJson = json.substring(1, index);
+        String valueJson = json.substring(index + 1, json.length() - 1);
+        Object keyObject = createObjectFromType(mapKeyType, keyJson);
+        Object valueObject = createObjectFromType(mapValueType, valueJson);
+        Map map = new HashMap<>();
+        map.put(keyObject, valueObject);
+        field.set(o, map);
+    }
+
+    private static Object createObjectFromType(Type type, String json) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        if (type.toString().contains("List")) {
+            List list = new ArrayList<>();
+            String className = type.toString().split("<")[1].replace(">", "");
+            Class<?> clazz = Class.forName(className);
+            fillList(list, json, clazz);
+            return list;
+        } else if (type.getClass().getSimpleName().equals("Map")) {
+            Map map = new HashMap();
+            fillObject(json, map);
+            return map;
+        } else if (((Class) type).getSimpleName().equals("Double")) {
+            return Double.valueOf(json);
+        } else if (((Class) type).getSimpleName().equals("Integer")) {
+            return Integer.valueOf(json);
+        } else if (((Class) type).getSimpleName().equals("UUID")) {
+            return UUID.fromString(json.substring(1, json.length() - 1));
+        } else if (((Class) type).getSimpleName().equals("LocalDateTime")) {
+            return LocalDateTime.parse(json.substring(1, json.length() - 1));
+        } else if (((Class) type).getSimpleName().equals("LocalDate")) {
+            return LocalDate.parse(json.substring(1, json.length() - 1));
+        } else if (((Class) type).getSimpleName().equals("OffsetDateTime")) {
+            return OffsetDateTime.parse(json.substring(1, json.length() - 1));
+        } else if (((Class) type).getSimpleName().equals("String")) {
+            return json.substring(1, json.length() - 1);
+        } else {
+            Constructor<?> constructor = type.getClass().getDeclaredConstructor();
+            constructor.setAccessible(true);
+            Object o = constructor.newInstance();
+            fillObject(json, o);
+            return o;
+        }
     }
 }

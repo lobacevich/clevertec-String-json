@@ -26,7 +26,6 @@ public class Serialize {
         counter++;
         if (o instanceof Map<?, ?>) {
             MapConverter(o);
-            System.out.println("Map");
             return;
         }
         if (o instanceof Collection<?> ||
@@ -79,7 +78,7 @@ public class Serialize {
 
     private static void CollectionConverter(Object o) {
         BUILDER.append("[\n");
-        for (Object elem : (Collection<?>) o) {
+        for (Object elem : (Collection) o) {
             converter(elem);
             BUILDER.append(",");
         }
@@ -88,5 +87,15 @@ public class Serialize {
     }
 
     private static void MapConverter(Object o) {
+        Map<?, ?> map = (Map) o;
+        BUILDER.append("{");
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            BUILDER.append("\"");
+            BUILDER.append(entry.getKey());
+            BUILDER.append("\": ");
+            converter(entry.getValue());
+        }
+        BUILDER.deleteCharAt(BUILDER.length() - 1);
+        BUILDER.append("}");
     }
 }
