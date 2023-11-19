@@ -19,6 +19,7 @@ public class Serialize {
 
     public static String toJson(Object o) {
         converter(o);
+        BUILDER.deleteCharAt(BUILDER.length() - 2);
         return BUILDER.toString();
     }
 
@@ -40,7 +41,7 @@ public class Serialize {
             fieldConverter(field, o);
         }
         BUILDER.deleteCharAt(BUILDER.length() - 2);
-        BUILDER.append("}\n");
+        BUILDER.append("},\n");
         counter--;
     }
 
@@ -80,9 +81,8 @@ public class Serialize {
         BUILDER.append("[\n");
         for (Object elem : (Collection) o) {
             converter(elem);
-            BUILDER.append(",");
         }
-        BUILDER.deleteCharAt(BUILDER.length() - 1);
+        BUILDER.deleteCharAt(BUILDER.length() - 2);
         BUILDER.append("],\n");
     }
 
@@ -95,7 +95,7 @@ public class Serialize {
             BUILDER.append("\": ");
             converter(entry.getValue());
         }
-        BUILDER.deleteCharAt(BUILDER.length() - 1);
-        BUILDER.append("}");
+        BUILDER.deleteCharAt(BUILDER.length() - 2);
+        BUILDER.append("},\n");
     }
 }
